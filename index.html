@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Panel de Administración</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #f0f0f0;
+      padding: 20px;
+    }
+    input, select {
+      margin: 5px;
+      padding: 5px;
+    }
+    .cuenta {
+      background: #222;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Panel de Administración 🔐</h1>
+  <label>Clave de acceso: <input type="text" id="clave" /></label><br/>
+  <label>Días válidos: <input type="number" id="dias" min="1" value="1" /></label><br/>
+  <label>Historiales permitidos: <input type="number" id="historiales" min="1" value="10" /></label><br/>
+  <button onclick="guardarClave()">Guardar clave</button>
+  <button onclick="borrarClave()">Revocar sesión actual</button>
+
+  <h2>Accesos creados</h2>
+  <div id="listaCuentas"></div>
+
+  <script>
+    function guardarClave() {
+      const clave = document.getElementById('clave').value.trim();
+      const dias = parseInt(document.getElementById('dias').value);
+      const historiales = parseInt(document.getElementById('historiales').value);
+      if (!clave || dias <= 0 || historiales <= 0) return alert("Campos inválidos");
+
+      const ahora = new Date();
+      const expiracion = new Date(ahora.getTime() + dias * 24 * 60 * 60 * 1000);
+      const cuentas = JSON.parse(localStorage.getItem('cuentas') || '{}');
+
+      cuentas[clave] = {
+        fechaCreacion: ahora.toISOString(),
+        expiracion: expiracion.toISOString(),
+        historialesPermitidos: historiales,
+        usados: 0
+      };
+      localStorage.setItem('cuentas', JSON.stringify(cuentas));
+      localStorage.setItem('claveActiva', clave);
+      actualizarLista();
+      alert("Clave guardada con éxito");
+    }
+
+    function borrarClave() {
+      localStorage.removeItem('claveActiva');
+      alert("Sesión revocada");
+    }
+
+    function actualizarLista() {
+      const cuentas = JSON.parse(localStorage.getItem('cuentas') || '{}');
+      const contenedor = document.getElementById('listaCuentas');
+      contenedor.innerHTML = '';
+      Object.entries(cuentas).forEach(([clave, info]) => {
+        const div = document.createElement('div');
+        div.className = 'cuenta';
+        div.innerHTML = `
+          <strong>Clave:</strong> ${clave}<br/>
+          <strong>Fecha creación:</strong> ${new Date(info.fechaCreacion).toLocaleString()}<br/>
+          <strong>Expira:</strong> ${new Date(info.expiracion).toLocaleString()}<br/>
+          <strong>Historiales permitidos:</strong> ${info.historialesPermitidos}<br/>
+          <strong>Usados:</strong> ${info.usados}
+        `;
+        contenedor.appendChild(div);
+      });
+    }
+
+    actualizarLista();
+  </script>
+</body>
+</html>
